@@ -24,194 +24,197 @@ yarn -D core-js css-loader css-minimizer-webpack-plugin mini-css-extract-plugin 
 yarn add -D @types/react @types/react-dom typescript</code></pre></div>
 <h2>#setting</h2>
 <h2>webpack.common.js</h2>
-<p>const HtmlWebpackPlugin = require(“html-webpack-plugin”);
-const path = require(“path”);
-const webpack = require(“webpack”);
-// const { BundleAnalyzerPlugin } = require(“webpack-bundle-analyzer”);
-// BundleAnalyzer는 Bundle 최적화 용도로 보통 저는 사용합니다.</p>
-<p>module.exports = {
-entry: <code class="language-text">${path.resolve(__dirname, "../src")}/index.tsx</code>,
-module: {
-rules: [
-{
-test: /.(ts|tsx|js|jsx)$/,
-use: “babel-loader”,
-exclude: /node_modules/,
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">const HtmlWebpackPlugin = require("html-webpack-plugin");
+const path = require("path");
+const webpack = require("webpack");
+// const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
+// BundleAnalyzer는 Bundle 최적화 용도로 보통 저는 사용합니다.
+
+module.exports = {
+  entry: `${path.resolve(__dirname, "../src")}/index.tsx`,
+  module: {
+    rules: [
+      {
+        test: /\.(ts|tsx|js|jsx)$/,
+        use: "babel-loader",
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: `${path.resolve(__dirname, "../src/public")}/index.html`,
+    }),
+    new webpack.ProvidePlugin({
+      React: "react",
+    }),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "..src/"),
+    },
+    extensions: [".js", ".ts", ".jsx", ".tsx", ".css", ".json"],
+  },
+};</code></pre></div>
+<h2>webpack.dev.js</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">const { merge } = require("webpack-merge");
+const common = require("./webpack.common");
+
+module.exports = merge(common, {
+  mode: "development",
+  devtool: "inline-source-map",
+  devServer: {
+    open: false,
+    hot: true,
+    compress: true,
+    port: 8081,
+    historyApiFallback: true,
+    liveReload: true,
+  },
+  output: {
+    filename: "[name].[contenthash].js",
+    publicPath: "/",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(sa|sc|c)ss$/i,
+        use: ["style-loader", "css-loader", "sass-loader"],
+      },
+    ],
+  },
+});</code></pre></div>
+<h2>webpack.prod.js</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">const { merge } = require("webpack-merge");
+const common = require("./webpack.common");
+const path = require("path");
+
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+
+module.exports = merge(common, {
+  mode: "production",
+  devtool: "cheap-module-source-map",
+  output: {
+    filename: "[name].[contenthash].js",
+    path: path.resolve(__dirname, "../dist"),
+    publicPath: "./",
+    clean: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(sa|sc|c)ss$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          "css-loader",
+          "sass-loader",
+        ],
+      },
+    ],
+  },
+  plugins: [new MiniCssExtractPlugin()],
+  optimization: {
+    usedExports: true,
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true,
+          },
+        },
+      }),
+      new CssMinimizerPlugin(),
+    ],
+    splitChunks: {
+      chunks: "all",
+    },
+  },
+  performance: {
+    hints: false,
+    maxEntrypointSize: 512000,
+    maxAssetSize: 512000,
+  },
+});</code></pre></div>
+<h2>.babelrc</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">{
+  "presets": [
+    "@babel/preset-react",
+    [
+      "@babel/preset-env",
+      {
+        "modules": false,
+        "useBuiltIns": "usage",
+        "corejs": 3
+      }
+    ],
+    "@babel/preset-typescript"
+  ]
+}</code></pre></div>
+<h2>tsconfig.json</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "es5",
+    "module": "esnext",
+    "jsx": "react-jsx",
+    "noImplicitAny": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  },
+  "include": ["src"]
+}</code></pre></div>
+<h2>package.json</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">//scripts
+"scripts": {
+    "dev": "webpack-dev-server --config config/webpack.dev.js",
+    "prod": "webpack-dev-server --config config/webpack.prod.js",
+    "build:dev": "webpack --config config/webpack.dev.js",
+    "build:prod": "webpack --config config/webpack.prod.js"
 },
-],
-},
-plugins: [
-new HtmlWebpackPlugin({
-template: <code class="language-text">${path.resolve(__dirname, "../src/public")}/index.html</code>,
-}),
-new webpack.ProvidePlugin({
-React: “react”,
-}),
-],
-resolve: {
-alias: {
-”@”: path.resolve(__dirname, “..src/”),
-},
-extensions: [“.js”, “.ts”, “.jsx”, “.tsx”, “.css”, “.json”],
-},
-};</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">
-## webpack.dev.js</code></pre></div>
-<p>const { merge } = require(“webpack-merge”);
-const common = require(“./webpack.common”);</p>
-<p>module.exports = merge(common, {
-mode: “development”,
-devtool: “inline-source-map”,
-devServer: {
-open: false,
-hot: true,
-compress: true,
-port: 8081,
-historyApiFallback: true,
-liveReload: true,
-},
-output: {
-filename: “[name].[contenthash].js”,
-publicPath: ”/”,
-},
-module: {
-rules: [
-{
-test: /.(sa|sc|c)ss$/i,
-use: [“style-loader”, “css-loader”, “sass-loader”],
-},
-],
-},
-});</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">
-## webpack.prod.js</code></pre></div>
-<p>const { merge } = require(“webpack-merge”);
-const common = require(“./webpack.common”);
-const path = require(“path”);</p>
-<p>const MiniCssExtractPlugin = require(“mini-css-extract-plugin”);
-const TerserPlugin = require(“terser-webpack-plugin”);
-const CssMinimizerPlugin = require(“css-minimizer-webpack-plugin”);</p>
-<p>module.exports = merge(common, {
-mode: “production”,
-devtool: “cheap-module-source-map”,
-output: {
-filename: “[name].[contenthash].js”,
-path: path.resolve(__dirname, “../dist”),
-publicPath: “./”,
-clean: true,
-},
-module: {
-rules: [
-{
-test: /.(sa|sc|c)ss$/i,
-use: [
-MiniCssExtractPlugin.loader,
-“css-loader”,
-“sass-loader”,
-],
-},
-],
-},
-plugins: [new MiniCssExtractPlugin()],
-optimization: {
-usedExports: true,
-minimize: true,
-minimizer: [
-new TerserPlugin({
-terserOptions: {
-compress: {
-drop_console: true,
-},
-},
-}),
-new CssMinimizerPlugin(),
-],
-splitChunks: {
-chunks: “all”,
-},
-},
-performance: {
-hints: false,
-maxEntrypointSize: 512000,
-maxAssetSize: 512000,
-},
-});</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">## .babelrc</code></pre></div>
-<p>{
-“presets”: [
-“@babel/preset-react”,
-[
-“@babel/preset-env”,
-{
-“modules”: false,
-“useBuiltIns”: “usage”,
-“corejs”: 3
-}
-],
-“@babel/preset-typescript”
+
+//brwoserlist
+"browserslist": [
+	"ie 11"
 ]
-}</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">## tsconfig.json</code></pre></div>
-<p>{
-“compilerOptions”: {
-“outDir”: “./dist”,
-“target”: “es5”,
-“module”: “esnext”,
-“jsx”: “react-jsx”,
-“noImplicitAny”: true,
-“allowSyntheticDefaultImports”: true,
-“lib”: [“dom”, “dom.iterable”, “esnext”],
-“allowJs”: true,
-“skipLibCheck”: true,
-“esModuleInterop”: true,
-“strict”: true,
-“forceConsistentCasingInFileNames”: true,
-“moduleResolution”: “node”,
-“resolveJsonModule”: true,
-“isolatedModules”: true
-},
-“include”: [“src”]
-}</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">## package.json</code></pre></div>
-<p>//scripts
-“scripts”: {
-“dev”: “webpack-dev-server –config config/webpack.dev.js”,
-“prod”: “webpack-dev-server –config config/webpack.prod.js”,
-“build:dev”: “webpack –config config/webpack.dev.js”,
-“build:prod”: “webpack –config config/webpack.prod.js”
-},</p>
-<p>//brwoserlist
-“browserslist”: [
-“ie 11”
-]</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">## index.html</code></pre></div>
-<!DOCTYPE html>
-<html lang="ko">
-  <meta charset="utf-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-  <meta
+</code></pre></div>
+<h2>index.html</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">&lt;!DOCTYPE html>
+&lt;html lang="ko">
+  &lt;meta charset="utf-8" />
+  &lt;meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  &lt;meta
     name="viewport"
     content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
   />
-  <head>
-    <title>STARTER KIT MAKERT RYUHOJIN</title>
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
-```
-## index.tsx
-```
-import { createRoot } from "react-dom/client";
+  &lt;head>
+    &lt;title>STARTER KIT MAKERT RYUHOJIN&lt;/title>
+  &lt;/head>
+  &lt;body>
+    &lt;div id="root">&lt;/div>
+  &lt;/body>
+&lt;/html></code></pre></div>
+<h2>index.tsx</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">import { createRoot } from "react-dom/client";
 import App from "./App";
-<p>const container = document.getElementById(“root”);
-const root = createRoot(container as Element);</p>
-<p>root.render(<App />);</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">## App.tsx</code></pre></div>
-<p>const App = () => {
-return <div>Hello Hojin</div>;
+
+const container = document.getElementById("root");
+const root = createRoot(container as Element);
+
+root.render(&lt;App />);
+</code></pre></div>
+<h2>App.tsx</h2>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">const App = () => {
+    return &lt;div>Hello Hojin&lt;/div>;
 }
-export default App;</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">
-</code></pre></div></div><style data-emotion="css hx9xpc">@media (max-width: 768px){.css-hx9xpc{padding:0 20px;}}</style><div class="css-hx9xpc e1gqsjds0"></div><style data-emotion="css 9w9jmx">.css-9w9jmx{display:grid;place-items:center;margin-top:auto;padding:50px 0;font-size:15px;text-align:center;line-height:1.5;}@media (max-width: 768px){.css-9w9jmx{font-size:13px;}}</style><footer class="css-9w9jmx e1oae0v80">Thank You for Visiting My Blog.<br/>© 2022 Developer Jae Hyuk, Powered By Gatsby.</footer></main></div><div id="gatsby-announcer" style="position:absolute;top:0;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border:0" aria-live="assertive" aria-atomic="true"></div></div><script id="gatsby-script-loader">/*<![CDATA[*/window.pagePath="/Without CRA/";window.___webpackCompilationHash="397ceb6b890800a1cec1";/*]]>*/</script><script id="gatsby-chunk-mapping">/*<![CDATA[*/window.___chunkMapping={"polyfill":["/polyfill-4718f0fec20e0d09d7f5.js"],"app":["/app-c0b7934d6f79e81419f5.js"],"component---src-pages-404-tsx":["/component---src-pages-404-tsx-cf4e681ec010cf32b641.js"],"component---src-pages-index-tsx":["/component---src-pages-index-tsx-29c01f10b022961afddf.js"],"component---src-pages-info-tsx":["/component---src-pages-info-tsx-f88f1309e0232e23e385.js"],"component---src-templates-post-template-tsx":["/component---src-templates-post-template-tsx-ac405826bf3debf8d2e6.js"]};/*]]>*/</script><script src="/polyfill-4718f0fec20e0d09d7f5.js" nomodule=""></script><script src="/app-c0b7934d6f79e81419f5.js" async=""></script><script src="/framework-c57a9454c0e3bef16c3b.js" async=""></script><script src="/webpack-runtime-439875fc26a84ce92d6b.js" async=""></script></body></html>
+export default App;</code></pre></div></div><style data-emotion="css hx9xpc">@media (max-width: 768px){.css-hx9xpc{padding:0 20px;}}</style><div class="css-hx9xpc e1gqsjds0"></div><style data-emotion="css 9w9jmx">.css-9w9jmx{display:grid;place-items:center;margin-top:auto;padding:50px 0;font-size:15px;text-align:center;line-height:1.5;}@media (max-width: 768px){.css-9w9jmx{font-size:13px;}}</style><footer class="css-9w9jmx e1oae0v80">Thank You for Visiting My Blog.<br/>© 2022 Developer Jae Hyuk, Powered By Gatsby.</footer></main></div><div id="gatsby-announcer" style="position:absolute;top:0;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border:0" aria-live="assertive" aria-atomic="true"></div></div><script id="gatsby-script-loader">/*<![CDATA[*/window.pagePath="/Without CRA/";window.___webpackCompilationHash="4c68008c353576850255";/*]]>*/</script><script id="gatsby-chunk-mapping">/*<![CDATA[*/window.___chunkMapping={"polyfill":["/polyfill-4718f0fec20e0d09d7f5.js"],"app":["/app-c0b7934d6f79e81419f5.js"],"component---src-pages-404-tsx":["/component---src-pages-404-tsx-cf4e681ec010cf32b641.js"],"component---src-pages-index-tsx":["/component---src-pages-index-tsx-29c01f10b022961afddf.js"],"component---src-pages-info-tsx":["/component---src-pages-info-tsx-f88f1309e0232e23e385.js"],"component---src-templates-post-template-tsx":["/component---src-templates-post-template-tsx-ac405826bf3debf8d2e6.js"]};/*]]>*/</script><script src="/polyfill-4718f0fec20e0d09d7f5.js" nomodule=""></script><script src="/app-c0b7934d6f79e81419f5.js" async=""></script><script src="/framework-c57a9454c0e3bef16c3b.js" async=""></script><script src="/webpack-runtime-439875fc26a84ce92d6b.js" async=""></script></body></html>
